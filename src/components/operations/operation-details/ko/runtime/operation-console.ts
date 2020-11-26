@@ -1,3 +1,4 @@
+import { ResponsePackage } from "./responsePackage";
 import * as ko from "knockout";
 import * as validation from "knockout.validation";
 import * as _ from "lodash";
@@ -16,7 +17,7 @@ import { ProductService } from "../../../../../services/productService";
 import { UsersService } from "../../../../../services/usersService";
 import { TenantService } from "../../../../../services/tenantService";
 import { ServiceSkuName, TypeOfApi } from "../../../../../constants";
-import { HttpClient, HttpRequest } from "@paperbits/common/http";
+import { HttpClient, HttpRequest, HttpResponse } from "@paperbits/common/http";
 import { Revision } from "../../../../../models/revision";
 import { templates } from "./templates/templates";
 import { ConsoleParameter } from "../../../../../models/console/consoleParameter";
@@ -420,6 +421,41 @@ export class OperationConsole {
         this.sendRequest();
     }
 
+    public async sendFromBrowser<T>(request: HttpRequest): Promise<HttpResponse<T>> {
+        const response = await this.httpClient.send<any>(request);
+        return response;
+    }
+
+    public async sendFromProxy<T>(request: HttpRequest): Promise<HttpResponse<T>> {
+        const formData = new FormData();
+        const requestPackage = new Blob([JSON.stringify(request)], { type: "application/json" });
+        formData.append("requestPackage", requestPackage);
+
+        const proxiedRequest: HttpRequest = {
+            url: "http://developer.apim.net/api/send",
+            method: "POST",
+            headers: [], // Authorization?
+            body: formData
+        };
+
+        const proxiedResponse = await this.httpClient.send<ResponsePackage>(proxiedRequest);
+        const responsePackage = proxiedResponse.toObject();
+
+        const responseBodyBuffer = responsePackage.body
+            ? Buffer.from(responsePackage.body.data)
+            : null;
+
+        const response: any = {
+            headers: responsePackage.headers,
+            statusCode: responsePackage.statusCode,
+            statusText: responsePackage.statusMessage,
+            body: responseBodyBuffer,
+            toText: () => responseBodyBuffer.toString("utf8")
+        };
+
+        return response;
+    }
+
     private async sendRequest(): Promise<void> {
         this.requestError(null);
         this.sendingRequest(true);
@@ -456,7 +492,9 @@ export class OperationConsole {
                 body: payload
             };
 
-            const response = await this.httpClient.send(request);
+            const response = await this.sendFromProxy(request);
+            // const response = await this.httpClient.send(request);
+
             this.responseHeadersString(response.headers.map(x => `${x.name}: ${x.value}`).join("\n"));
 
             const knownStatusCode = KnownStatusCodes.find(x => x.code === response.statusCode);
