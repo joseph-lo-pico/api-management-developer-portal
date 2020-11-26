@@ -427,8 +427,10 @@ export class OperationConsole {
     }
 
     public async sendFromProxy<T>(request: HttpRequest): Promise<HttpResponse<T>> {
-        request.body = Buffer.from(request.body);
-        
+        if (request.body) {
+            request.body = Buffer.from(request.body);
+        }
+
         const formData = new FormData();
         const requestPackage = new Blob([JSON.stringify(request)], { type: "application/json" });
         formData.append("requestPackage", requestPackage);
