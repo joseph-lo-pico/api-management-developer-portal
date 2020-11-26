@@ -1,4 +1,3 @@
-import { ResponsePackage } from "./responsePackage";
 import * as ko from "knockout";
 import * as validation from "knockout.validation";
 import * as _ from "lodash";
@@ -28,6 +27,7 @@ import { OAuthService } from "../../../../../services/oauthService";
 import { AuthorizationServer } from "../../../../../models/authorizationServer";
 import { SessionManager } from "../../../../../authentication/sessionManager";
 import { OAuthSession, StoredCredentials } from "./oauthSession";
+import { ResponsePackage } from "./responsePackage";
 
 const oauthSessionKey = "oauthSession";
 
